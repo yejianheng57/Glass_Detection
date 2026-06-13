@@ -1,0 +1,14 @@
+glass_rect_UP_RED_clean
+glass_rect_UP_RED_dirty
+glass_rect_UP_RED_clean_arm
+glass_rect_UP_RED_dirty_arm
+glass_rect_UP_GREEN_clean
+glass_rect_UP_GREEN_dirty
+glass_rect_UP_GREEN_clean_arm
+glass_rect_UP_GREEN_dirty_arm
+
+glass_rect_END_RED_clean
+glass_rect_END_RED_dirty
+glass_rect_END_GREEN_clean
+glass_rect_END_GREEN_dirty
+
