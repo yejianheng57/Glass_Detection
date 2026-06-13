@@ -1,0 +1,59 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# IDE and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+logs/
+tmp/
+temp/
+
+# Dataset image files and generated YOLO image splits
+datasets/*
+
+# Training outputs and experiment trackers
+runs/
+wandb/
+mlruns/
+tensorboard/
+
+# Model weights and exported artifacts
+*.pt
+*.pth
+*.onnx
+*.engine
+*.tflite
+*.pb
+*.weights
+
+# Large media captures
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.bag
