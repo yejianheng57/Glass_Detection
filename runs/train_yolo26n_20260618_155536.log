@@ -1,0 +1,24 @@
+/data_8tb_01/yejianheng/miniconda3/envs/glass/lib/python3.10/site-packages/torch/cuda/__init__.py:187: UserWarning: CUDA initialization: The NVIDIA driver on your system is too old (found version 12070). Please update your GPU driver by downloading and installing a new version from the URL: http://www.nvidia.com/Download/index.aspx Alternatively, go to: https://pytorch.org to install a PyTorch version that has been compiled with your version of the CUDA driver. (Triggered internally at /pytorch/c10/cuda/CUDAFunctions.cpp:119.)
+  return torch._C._cuda_getDeviceCount() > 0
+Ultralytics 8.4.70 🚀 Python-3.10.20 torch-2.12.1+cu130 
+Traceback (most recent call last):
+  File "/data_8tb_01/yejianheng/GLASS/Glass_Detection/scripts/model/train_yolo_seg.py", line 80, in <module>
+    main()
+  File "/data_8tb_01/yejianheng/GLASS/Glass_Detection/scripts/model/train_yolo_seg.py", line 73, in main
+    results = model.train(**train_kwargs)
+  File "/data_8tb_01/yejianheng/miniconda3/envs/glass/lib/python3.10/site-packages/ultralytics/engine/model.py", line 783, in train
+    self.trainer = (trainer or self._smart_load("trainer"))(overrides=args, _callbacks=self.callbacks)
+  File "/data_8tb_01/yejianheng/miniconda3/envs/glass/lib/python3.10/site-packages/ultralytics/models/yolo/segment/train.py", line 40, in __init__
+    super().__init__(cfg, overrides, _callbacks)
+  File "/data_8tb_01/yejianheng/miniconda3/envs/glass/lib/python3.10/site-packages/ultralytics/models/yolo/detect/train.py", line 63, in __init__
+    super().__init__(cfg, overrides, _callbacks)
+  File "/data_8tb_01/yejianheng/miniconda3/envs/glass/lib/python3.10/site-packages/ultralytics/engine/trainer.py", line 128, in __init__
+    self.device = select_device(self.args.device)
+  File "/data_8tb_01/yejianheng/miniconda3/envs/glass/lib/python3.10/site-packages/ultralytics/utils/torch_utils.py", line 231, in select_device
+    raise ValueError(
+ValueError: Invalid CUDA 'device=0,1,2' requested. Use 'device=cpu' or pass valid CUDA device(s) if available, i.e. 'device=0' or 'device=0,1,2,3' for Multi-GPU.
+
+torch.cuda.is_available(): False
+torch.cuda.device_count(): 3
+os.environ['CUDA_VISIBLE_DEVICES']: None
+
