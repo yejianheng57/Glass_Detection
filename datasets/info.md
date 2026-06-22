@@ -12,3 +12,7 @@ glass_rect_END_RED_dirty
 glass_rect_END_GREEN_clean
 glass_rect_END_GREEN_dirty
 
+RED就是红色的盘，没有RED就是绿色的盘
+clean是桌面环境整洁，dirty就是桌面环境杂乱
+UP就是顶部固定相机拍摄，END就是末端相机拍摄
+

@@ -1,144 +1,97 @@
-# 模型脚本说明
+# 模型脚本
 
-本目录只放训练和推理相关脚本：
+本目录包含 YOLO Seg 训练、离线预测和 D435i 实时推理脚本。
 
 ```text
 scripts/model/
-  train_yolo_seg.py
-  predict_yolo_seg.py
-  infer_realsense_yolo_seg.py
+  train_yolo_seg.py              # 训练 YOLO26 Seg
+  predict_yolo_seg.py            # 离线预测并导出结果
+  infer_realsense_yolo_seg.py    # D435i 实时推理
 ```
 
-模型阶段负责：
+训练前先完成数据整理和检查，见 `scripts/data/README.md`。
 
-```text
-YOLO Seg 数据集
-  -> 训练 YOLO26 Seg
-  -> 离线预测验证
-  -> D435i 实时推理
-```
+## 推荐训练命令
 
-训练前需要先完成数据整理和检查，详见 `scripts/data/README.md`。
-
-## 模型训练
-
-默认训练 `yolo26n-seg.pt`：
-
-```bash
-python scripts/model/train_yolo_seg.py
-```
-
-默认参数：
-
-- `--data datasets/glass_rect/data.yaml`
-- `--model yolo26n-seg.pt`
-- `--epochs 100`
-- `--imgsz 640`
-- `--batch 8`
-- `--workers 0`
-
-建议先用 `n` 模型跑通流程。如果 `n` 的漏检较多或 mask 不够贴边，再尝试 `s`：
+D435i RGB 为 `1280x720`，推荐使用接近原始比例且对齐 YOLO 步长的矩形输入 `736 1280`，顺序是 `height width`，或者直接--imgsz 960 （代表压缩到960*960）。
 
 ```bash
 python scripts/model/train_yolo_seg.py \
-  --model yolo26s-seg.pt \
-  --name glass_hole_yolo26s \
-  --epochs 100 \
-  --imgsz 640 \
-  --batch 8
+  --data datasets/glass_rect/data.yaml \
+  --device 0,1,2 \
+  --model ./yolo26n-seg.pt \
+  --name glass_hole_yolo26n_1280x736_e150 \
+  --epochs 150 \
+  --imgsz 736 1280 \
+  --batch 24 \
+  --workers 8
 ```
 
-指定显卡：
-
-```bash
-python scripts/model/train_yolo_seg.py --device 0
-```
-
-显存不够时降低 batch：
-
-```bash
-python scripts/model/train_yolo_seg.py --batch 4
-python scripts/model/train_yolo_seg.py --batch 2
-```
-
-训练完成后，默认权重路径类似：
+训练完成后权重通常在：
 
 ```text
-runs/segment/glass_hole_yolo26n/weights/best.pt
+runs/segment/glass_hole_yolo26n_1280x736_e150/weights/best.pt
 ```
 
-## 离线预测验证
-
-用验证集或新采集图片检查分割效果：
+## 离线预测
 
 ```bash
 python scripts/model/predict_yolo_seg.py \
-  --weights runs/segment/glass_hole_yolo26n/weights/best.pt \
-  --source datasets/glass_rect/images/val
+  --weights runs/segment/glass_hole_yolo26n_1280x736_e150/weights/best.pt \
+  --source datasets/glass_rect/images/val \
+  --imgsz 736 1280 \
+  --conf 0.25 \
+  --device 0
 ```
 
-输出内容：
+输出：
 
 ```text
-runs/predict/glass_hole/overlays/
-runs/predict/glass_hole/predictions.csv
+runs/predict/glass_hole/overlays/       # 叠加 mask 和 box 的图片
+runs/predict/glass_hole/predictions.csv # 置信度、box、中心点、面积、角度、多边形点
 ```
 
-其中：
-
-- `overlays/` 保存画好检测框和分割掩膜的图片。
-- `predictions.csv` 保存每个空洞实例的置信度、检测框、中心点、面积、角度和多边形点。
-
-常用参数：
-
-```bash
-python scripts/model/predict_yolo_seg.py --conf 0.35 --iou 0.7
-python scripts/model/predict_yolo_seg.py --source datasets/glass_rect/raw_images
-```
-
-## 实时推理
-
-连接 D435i 后运行：
+## D435i 实时推理
 
 ```bash
 python scripts/model/infer_realsense_yolo_seg.py \
-  --weights runs/segment/glass_hole_yolo26n/weights/best.pt
+  --weights runs/segment/glass_hole_yolo26n_1280x736_e150/weights/best.pt \
+  --width 1280 \
+  --height 720 \
+  --fps 30 \
+  --imgsz 736 1280 \
+  --conf 0.25 \
+  --device 0
 ```
 
 窗口快捷键：
 
-- `q` 或 `Esc`：退出。
 - `s`：保存当前原图和叠加结果到 `runs/realsense/glass_hole/`。
+- `q` 或 `Esc`：退出。
 
-常用参数：
+## 其他常用参数
 
 ```bash
-python scripts/model/infer_realsense_yolo_seg.py --conf 0.35
-python scripts/model/infer_realsense_yolo_seg.py --width 1280 --height 720 --fps 30
-python scripts/model/infer_realsense_yolo_seg.py --device 0
+# 方形输入
+python scripts/model/train_yolo_seg.py --imgsz 640
+
+# 显存不足时降低 batch
+python scripts/model/train_yolo_seg.py --batch 12
+python scripts/model/train_yolo_seg.py --batch 8
+
+# 尝试更大的模型
+python scripts/model/train_yolo_seg.py \
+  --model ./yolo26s-seg.pt \
+  --name glass_hole_yolo26s_960_e150 \
+  --epochs 150 \
+  --imgsz 960 \
+  --batch 12
 ```
 
-实时推理输出：
+## 选择建议
 
-```text
-D435i RGB 图像
-  -> YOLO26 Seg best.pt
-  -> 每个空洞的 box、confidence、mask
-  -> 轮廓中心点、面积、方向等几何结果
-```
+- 优先使用 `yolo26n-seg.pt`，当前 `736x1280` 训练结果综合最好。
+- 如果漏检明显或 mask 不够贴边，再尝试 `yolo26s-seg.pt` 或更大输入尺寸。
+- 实时部署优先看帧率、漏检率和误检率；如果 `n` 已满足要求，不必上更大的模型。
+- 若要用于机械臂，还需要相机标定、畸变校正、手眼标定或平面坐标转换。
 
-## 算力建议
-
-- 第一阶段优先使用 `yolo26n-seg.pt`。
-- 如果 `n` 效果不足，再训练 `yolo26s-seg.pt`。
-- 训练建议使用 NVIDIA GPU；只有 CPU 时可以跑推理验证，但训练会很慢。
-- 实时部署优先看稳定帧率和漏检率，如果 `n` 已满足要求，不必上更大的模型。
-
-## 后续机械臂坐标
-
-当前模型只输出图像中的分割结果。如果要服务机械臂，还需要在推理结果之后增加：
-
-- 相机内参标定。
-- 镜头畸变校正。
-- 固定相机到桌面平面的单应性变换，或机械臂末端相机的手眼标定。
-- 图像像素坐标到桌面坐标系或机械臂坐标系的转换。

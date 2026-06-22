@@ -14,6 +14,14 @@ import pyrealsense2 as rs
 from ultralytics import YOLO
 
 
+def parse_imgsz(values: list[int]) -> int | list[int]:
+    if len(values) == 1:
+        return values[0]
+    if len(values) == 2:
+        return values
+    raise argparse.ArgumentTypeError("--imgsz expects one value or two values: --imgsz 640 or --imgsz 736 1280")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="RealSense RGB YOLO Seg inference.")
     parser.add_argument(
@@ -24,7 +32,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--width", type=int, default=1280, help="RGB stream width.")
     parser.add_argument("--height", type=int, default=720, help="RGB stream height.")
     parser.add_argument("--fps", type=int, default=30, help="RGB stream FPS.")
-    parser.add_argument("--imgsz", type=int, default=640, help="Inference image size.")
+    parser.add_argument(
+        "--imgsz",
+        type=int,
+        nargs="+",
+        default=[640],
+        help="Inference image size. Use one value for square input or two values for height width, e.g. 640 or 736 1280.",
+    )
     parser.add_argument("--conf", type=float, default=0.25, help="Confidence threshold.")
     parser.add_argument("--iou", type=float, default=0.7, help="NMS IoU threshold.")
     parser.add_argument("--device", default=None, help="Device, for example 0, cpu, or cuda:0.")
@@ -85,7 +99,7 @@ def draw_geometry(overlay, result) -> int:
 def predict_frame(model: YOLO, image, args: argparse.Namespace):
     predict_kwargs = {
         "source": image,
-        "imgsz": args.imgsz,
+        "imgsz": args.parsed_imgsz,
         "conf": args.conf,
         "iou": args.iou,
         "verbose": False,
@@ -111,6 +125,7 @@ def save_frame(save_dir: Path, raw_image, overlay) -> None:
 
 def main() -> None:
     args = parse_args()
+    args.parsed_imgsz = parse_imgsz(args.imgsz)
     weights_path = Path(args.weights)
     if not weights_path.exists():
         raise FileNotFoundError(f"Weights file does not exist: {weights_path}")

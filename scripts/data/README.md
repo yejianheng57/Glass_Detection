@@ -1,169 +1,97 @@
-# 数据脚本说明
+# 数据脚本
 
-本目录只放数据相关脚本：
+本目录包含数据采集、标注、整理和检查脚本。
 
 ```text
 scripts/data/
-  collect_realsense_rgb.py
-  annotate_rect_holes.py
-  prepare_yolo_dataset.py
-  check_yolo_seg_dataset.py
+  collect_realsense_rgb.py       # D435i RGB 采集
+  annotate_rect_holes.py         # 多边形标注
+  prepare_yolo_dataset.py        # 整理 YOLO Seg 数据集
+  check_yolo_seg_dataset.py      # 检查图片和标签
 ```
 
-数据阶段负责：
-
-```text
-D435i RGB 采集
-  -> 人工多边形标注
-  -> 整理 YOLO Seg 数据集
-  -> 检查图片和标签
-```
-
-## 数据采集
-
-连接 Intel RealSense D435i 后运行：
+## 流程
 
 ```bash
-python scripts/data/collect_realsense_rgb.py
-```
-
-默认行为：
-
-- 图片保存到 `datasets/glass_rect/raw_images/`。
-- 采集日志保存到 `datasets/glass_rect/capture_log.csv`。
-- 按 `Enter` 保存当前 RGB 图像。
-- 按 `q` 或 `Esc` 退出。
-
-常用参数：
-
-```bash
+# 1. 采集 D435i RGB 图片
 python scripts/data/collect_realsense_rgb.py --width 1280 --height 720 --fps 30
-python scripts/data/collect_realsense_rgb.py --mode fixed
-python scripts/data/collect_realsense_rgb.py --mode robot --robot-pose 100 200 300 0 0 1.57
-```
 
-自定义保存路径：
-
-```bash
-python scripts/data/collect_realsense_rgb.py \
-  --output-dir datasets/glass_rect/raw_images \
-  --log-file datasets/glass_rect/capture_log.csv \
-  --prefix glass
-```
-
-Windows PowerShell 中可以把多行命令写成一行，或者用反引号换行。
-
-## 数据标注
-
-采集图片后运行：
-
-```bash
+# 2. 标注玻璃孔洞多边形
 python scripts/data/annotate_rect_holes.py
+
+# 3. 整理为 YOLO Seg 数据集
+python scripts/data/prepare_yolo_dataset.py --clean
+
+# 4. 检查数据集
+python scripts/data/check_yolo_seg_dataset.py --check-images
 ```
 
-如果使用自定义数据目录：
-
-```bash
-python scripts/data/annotate_rect_holes.py \
-  --images-dir datasets/glass_rect/raw_images \
-  --labels-dir datasets/glass_rect/raw_labels \
-  --point-radius 2
-```
-
-标注规则：
+## 默认目录
 
 ```text
-沿空洞边界顺时针或逆时针依次点击多个点
-按 f 或 Enter 结束当前空洞实例
-继续点击下一个空洞实例
+datasets/glass_rect/
+  raw_images/       # 原始图片
+  raw_labels/       # 原始 YOLO Seg 标注
+  images/train/
+  images/val/
+  labels/train/
+  labels/val/
+  data.yaml
 ```
 
-快捷键：
+`prepare_yolo_dataset.py` 支持两种输入：直接读取 `raw_images/`、`raw_labels/`，或扫描 `datasets/glass_rect/*/raw_images` 和 `raw_labels` 形式的多场景目录。多场景合并时会给文件名加场景前缀，避免重名覆盖。
 
-- `s`：保存当前图片标签。
-- `f` 或 `Enter`：结束当前实例。
-- `u`：撤销上一个点。
-- `d`：删除当前未完成目标或最后一个完整目标。
-- `n` 或右方向键：下一张。
-- `p` 或左方向键：上一张。
-- `q` 或 `Esc`：退出，若当前标签有修改会自动保存。
+## 标注说明
 
-## 标签格式
-
-每张图片对应一个同名 `.txt` 标签文件：
-
-```text
-glass_000001.jpg
-glass_000001.txt
-```
-
-YOLO Seg 单行标签格式：
+YOLO Seg 标签格式：
 
 ```text
 class_id x1 y1 x2 y2 x3 y3 ... xN yN
 ```
 
-说明：
-
 - `class_id` 固定为 `0`。
-- 坐标是归一化到 0-1 的多边形点。
-- 每个空洞实例至少 3 个点。
+- 坐标归一化到 `0-1`。
+- 每个孔洞实例至少 3 个点。
+- 同一个实例的点应沿边界连续点击，不要交叉跳点。
 
-## 整理训练集
+标注快捷键：
 
-采集和标注完成后运行：
+- `f` 或 `Enter`：结束当前实例。
+- `s`：保存当前图片标签。
+- `u`：撤销上一个点。
+- `d`：删除当前未完成实例或最后一个完整实例。
+- `n` / `p`：下一张 / 上一张。
+- `q` 或 `Esc`：退出，修改会自动保存。
 
-```bash
-python scripts/data/prepare_yolo_dataset.py --clean
-```
-
-输入目录：
-
-```text
-datasets/glass_rect/raw_images/
-datasets/glass_rect/raw_labels/
-```
-
-输出目录：
-
-```text
-datasets/glass_rect/images/train/
-datasets/glass_rect/images/val/
-datasets/glass_rect/labels/train/
-datasets/glass_rect/labels/val/
-datasets/glass_rect/data.yaml
-```
-
-常用参数：
+## 常用命令
 
 ```bash
+# 自定义采集路径
+python scripts/data/collect_realsense_rgb.py \
+  --output-dir datasets/glass_rect/raw_images \
+  --log-file datasets/glass_rect/capture_log.csv \
+  --prefix glass
+
+# 自定义标注路径
+python scripts/data/annotate_rect_holes.py \
+  --images-dir datasets/glass_rect/raw_images \
+  --labels-dir datasets/glass_rect/raw_labels
+
+# 合并指定场景
 python scripts/data/prepare_yolo_dataset.py \
-  --raw-images-dir datasets/glass_rect/raw_images \
-  --raw-labels-dir datasets/glass_rect/raw_labels \
+  --scene-dirs \
+    datasets/glass_rect/glass_rect_END_GREEN_clean \
+    datasets/glass_rect/glass_rect_UP_RED_dirty_arm \
   --output-dir datasets/glass_rect \
   --val-ratio 0.2 \
-  --seed 42 \
   --clean
 ```
 
-## 检查数据集
+## 检查重点
 
-整理完成后检查标签和图片：
-
-```bash
-python scripts/data/check_yolo_seg_dataset.py --check-images
-```
-
-如果出现以下错误，需要回到标注工具修正：
+如果检查脚本报错，通常需要回到标注阶段修正：
 
 - `missing label file`
 - `coordinates must be normalized to 0-1`
 - `needs class_id and at least 3 x/y pairs`
 - `orphan label without image`
-
-## 注意事项
-
-- 数据采集尽量覆盖不同位置、角度、光照和反光情况。
-- 固定相机采集时尽量保持相机位置和姿态不变。
-- 机械臂末端相机采集时建议同步记录每张图片对应的机械臂位姿。
-- 同一个空洞实例的点必须沿边界连续点击，不要交叉跳点。

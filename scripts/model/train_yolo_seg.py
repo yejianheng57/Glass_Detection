@@ -9,6 +9,14 @@ from pathlib import Path
 from ultralytics import YOLO
 
 
+def parse_imgsz(values: list[int]) -> int | list[int]:
+    if len(values) == 1:
+        return values[0]
+    if len(values) == 2:
+        return values
+    raise argparse.ArgumentTypeError("--imgsz expects one value or two values: --imgsz 640 or --imgsz 736 1280")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train YOLO Seg on the glass hole dataset.")
     parser.add_argument(
@@ -22,7 +30,13 @@ def parse_args() -> argparse.Namespace:
         help="Pretrained YOLO Seg weight, for example yolo26n-seg.pt or yolo26s-seg.pt.",
     )
     parser.add_argument("--epochs", type=int, default=100, help="Training epochs.")
-    parser.add_argument("--imgsz", type=int, default=640, help="Input image size.")
+    parser.add_argument(
+        "--imgsz",
+        type=int,
+        nargs="+",
+        default=[640],
+        help="Input image size. Use one value for square input or two values for height width, e.g. 640 or 736 1280.",
+    )
     parser.add_argument("--batch", type=int, default=8, help="Batch size.")
     parser.add_argument(
         "--device",
@@ -48,6 +62,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    imgsz = parse_imgsz(args.imgsz)
     data_path = Path(args.data)
     if not data_path.exists():
         raise FileNotFoundError(f"Dataset yaml does not exist: {data_path}")
@@ -60,7 +75,7 @@ def main() -> None:
         train_kwargs = {
             "data": str(data_path),
             "epochs": args.epochs,
-            "imgsz": args.imgsz,
+            "imgsz": imgsz,
             "batch": args.batch,
             "workers": args.workers,
             "project": args.project,

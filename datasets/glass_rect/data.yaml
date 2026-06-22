@@ -1,0 +1,6 @@
+path: datasets/glass_rect
+train: images/train
+val: images/val
+
+names:
+  0: glass_hole

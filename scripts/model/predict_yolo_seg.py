@@ -13,6 +13,14 @@ import numpy as np
 from ultralytics import YOLO
 
 
+def parse_imgsz(values: list[int]) -> int | list[int]:
+    if len(values) == 1:
+        return values[0]
+    if len(values) == 2:
+        return values
+    raise argparse.ArgumentTypeError("--imgsz expects one value or two values: --imgsz 640 or --imgsz 736 1280")
+
+
 CSV_FIELDS = [
     "image_name",
     "instance_index",
@@ -44,7 +52,13 @@ def parse_args() -> argparse.Namespace:
         help="Image file or image directory.",
     )
     parser.add_argument("--output-dir", default="runs/predict/glass_hole", help="Output folder.")
-    parser.add_argument("--imgsz", type=int, default=640, help="Inference image size.")
+    parser.add_argument(
+        "--imgsz",
+        type=int,
+        nargs="+",
+        default=[640],
+        help="Inference image size. Use one value for square input or two values for height width, e.g. 640 or 736 1280.",
+    )
     parser.add_argument("--conf", type=float, default=0.25, help="Confidence threshold.")
     parser.add_argument("--iou", type=float, default=0.7, help="NMS IoU threshold.")
     parser.add_argument("--device", default=None, help="Device, for example 0, cpu, or cuda:0.")
@@ -111,6 +125,7 @@ def extract_rows(result) -> list[dict[str, str | int | float]]:
 
 def main() -> None:
     args = parse_args()
+    imgsz = parse_imgsz(args.imgsz)
     weights_path = Path(args.weights)
     source_path = Path(args.source)
     output_dir = Path(args.output_dir)
@@ -128,7 +143,7 @@ def main() -> None:
     model = YOLO(str(weights_path))
     predict_kwargs = {
         "source": str(source_path),
-        "imgsz": args.imgsz,
+        "imgsz": imgsz,
         "conf": args.conf,
         "iou": args.iou,
         "stream": True,
